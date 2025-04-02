@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TimeBlock Planner</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #000;
+      color: #fff;
+    }
+    .draggable {
+      cursor: grab;
+    }
+    .taskList {
+      min-height: 80px;
+      background-color: #111;
+      border: 1px dashed #444;
+    }
+    .taskCard {
+      transition: all 0.2s ease-in-out;
+      background-color: #1f1f1f;
+    }
+    .taskCard:hover {
+      background-color: #333;
+      transform: scale(1.02);
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border-radius: 1rem;
+      box-shadow: 0 10px 25px rgba(255, 255, 255, 0.1);
+    }
+    .category-Work {
+      border-left: 6px solid #10b981;
+    }
+    .category-Study {
+      border-left: 6px solid #3b82f6;
+    }
+    .category-Break {
+      border-left: 6px solid #f59e0b;
+    }
+    .category-Other {
+      border-left: 6px solid #f43f5e;
+    }
+  </style>
+</head>
+<body class="font-sans">
+  <div class="max-w-6xl mx-auto py-10 px-4">
+    <h1 class="text-4xl font-extrabold text-center text-white mb-10">Weekly TimeBlock Planner</h1>
+
+    <div class="glass-card p-6 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+        <input type="text" id="taskInput" placeholder="Enter task name" class="p-3 border rounded w-full text-black">
+        <input type="time" id="startTime" class="p-3 border rounded text-black">
+        <input type="time" id="endTime" class="p-3 border rounded text-black">
+        <select id="daySelect" class="p-3 border rounded text-black">
+          <option value="Monday">Monday</option>
+          <option value="Tuesday">Tuesday</option>
+          <option value="Wednesday">Wednesday</option>
+          <option value="Thursday">Thursday</option>
+          <option value="Friday">Friday</option>
+          <option value="Saturday">Saturday</option>
+          <option value="Sunday">Sunday</option>
+        </select>
+        <select id="categorySelect" class="p-3 border rounded text-black">
+          <option value="Work">Work</option>
+          <option value="Study">Study</option>
+          <option value="Break">Break</option>
+          <option value="Other">Other</option>
+        </select>
+        <button onclick="addTask()" class="bg-white text-black font-semibold px-6 py-2 rounded shadow">Add Task</button>
+      </div>
+    </div>
+
+    <div class="text-center mb-8">
+      <button onclick="startBreak()" class="bg-white text-black font-semibold px-6 py-2 rounded shadow mr-4">Start Break (5 min)</button>
+      <button onclick="startTimer(25)" class="bg-white text-black font-semibold px-6 py-2 rounded shadow">Start Focus Timer (25 min)</button>
+      <div id="timerDisplay" class="mt-4 text-xl text-white font-bold"></div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="weeklySchedule">
+      <script>
+        const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+        document.write(days.map(day => `
+          <div id="${day}" class="day-column">
+            <h2 class="text-2xl font-bold text-white mb-2">${day}</h2>
+            <ul class="taskList rounded-lg p-4" ondrop="drop(event)" ondragover="allowDrop(event)"></ul>
+          </div>
+        `).join(''))
+      </script>
+    </div>
+  </div>
+
+  <script>
+    window.onload = () => {
+      const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+      tasks.forEach(task => renderTask(task));
+    }
+
+    function addTask() {
+      const taskName = document.getElementById('taskInput').value;
+      const start = document.getElementById('startTime').value;
+      const end = document.getElementById('endTime').value;
+      const day = document.getElementById('daySelect').value;
+      const category = document.getElementById('categorySelect').value;
+
+      if (!taskName || !start || !end || !day || !category) {
+        alert('Please fill in all fields');
+        return;
+      }
+
+      const task = { taskName, start, end, day, category };
+      renderTask(task);
+
+      const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+      tasks.push(task);
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+
+      document.getElementById('taskInput').value = '';
+      document.getElementById('startTime').value = '';
+      document.getElementById('endTime').value = '';
+    }
+
+    function renderTask(task) {
+      const li = document.createElement('li');
+      li.className = `taskCard shadow p-3 rounded-lg flex justify-between items-center draggable mb-2 category-${task.category}`;
+      li.draggable = true;
+      li.ondragstart = drag;
+      li.innerHTML = `<span>${task.start} - ${task.end}: <strong>${task.taskName}</strong></span>
+                      <button onclick="removeTask(this, '${task.taskName}', '${task.start}', '${task.end}', '${task.day}', '${task.category}')" class="text-white hover:text-red-400">Remove</button>`;
+      document.getElementById(task.day).querySelector('.taskList').appendChild(li);
+    }
+
+    function removeTask(button, name, start, end, day, category) {
+      button.parentElement.remove();
+      let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+      tasks = tasks.filter(t => !(t.taskName === name && t.start === start && t.end === end && t.day === day && t.category === category));
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    function allowDrop(ev) {
+      ev.preventDefault();
+    }
+
+    function drag(ev) {
+      ev.dataTransfer.setData("text/plain", ev.target.outerHTML);
+      ev.dataTransfer.dropEffect = "move";
+      ev.target.remove();
+    }
+
+    function drop(ev) {
+      ev.preventDefault();
+      const data = ev.dataTransfer.getData("text/plain");
+      const dropZone = ev.target.closest(".taskList");
+      dropZone.insertAdjacentHTML("beforeend", data);
+    }
+
+    let timer;
+    function startTimer(minutes) {
+      clearInterval(timer);
+      const display = document.getElementById("timerDisplay");
+      let seconds = minutes * 60;
+
+      timer = setInterval(() => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        display.textContent = `Timer: ${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        if (--seconds < 0) {
+          clearInterval(timer);
+          alert("Time's up! Take a break.");
+          display.textContent = '';
+        }
+      }, 1000);
+    }
+
+    function startBreak() {
+      startTimer(5);
+    }
+  </script>
+</body>
+</html>
