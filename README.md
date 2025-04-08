@@ -11,7 +11,7 @@ TimeBlock Planner is a web-based application designed to help users organize the
 - **Responsive Design**: Optimized for both desktop and mobile devices.
 ![Screenshot 2025-04-08 023126](https://github.com/user-attachments/assets/88c006f6-b57b-4252-a4d5-58adae10cfba)
 
-- Usage
+**Usage**
 Adding a Task:
 
 Enter the task name in the "Enter task name" field.
